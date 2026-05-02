@@ -112,7 +112,9 @@ async function vibeSend() {
 
   const msgEl = createStreamingMessage();
   let displayText = '';
+  let fullText = '';
   let inDraft = false;
+  let draftReceived = false;
 
   try {
     const res = await fetch('/api/creator/chat', {
@@ -130,6 +132,38 @@ async function vibeSend() {
     const decoder = new TextDecoder();
     let buffer = '';
 
+    const processLine = (line) => {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data: ')) return;
+
+      let obj;
+      try { obj = JSON.parse(trimmed.slice(6)); } catch { return; }
+
+      if (obj.type === 'chunk') {
+        fullText += obj.content;
+        if (!inDraft) {
+          const combined = displayText + obj.content;
+          const draftIdx = combined.indexOf('<draft>');
+          if (draftIdx === -1) {
+            displayText = combined;
+          } else {
+            displayText = combined.slice(0, draftIdx);
+            inDraft = true;
+          }
+          msgEl.textContent = displayText;
+          scrollVibe();
+        }
+      } else if (obj.type === 'draft') {
+        draftReceived = true;
+        applyDraft(obj.draft);
+      } else if (obj.type === 'done') {
+        vibeHistory.push({ role: 'user',      content: text });
+        vibeHistory.push({ role: 'assistant', content: displayText.trim() });
+      } else if (obj.type === 'error') {
+        throw new Error(obj.message);
+      }
+    };
+
     outer: while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -139,33 +173,21 @@ async function vibeSend() {
       buffer = lines.pop();
 
       for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith('data: ')) continue;
+        processLine(line);
+      }
+    }
 
-        let obj;
-        try { obj = JSON.parse(trimmed.slice(6)); } catch { continue; }
+    // Flush any remaining data in the buffer after the stream closes
+    if (buffer.trim()) {
+      for (const line of buffer.split('\n')) processLine(line);
+    }
 
-        if (obj.type === 'chunk') {
-          if (!inDraft) {
-            const combined = displayText + obj.content;
-            const draftIdx = combined.indexOf('<draft>');
-            if (draftIdx === -1) {
-              displayText = combined;
-            } else {
-              displayText = combined.slice(0, draftIdx);
-              inDraft = true;
-            }
-            msgEl.textContent = displayText;
-            scrollVibe();
-          }
-        } else if (obj.type === 'draft') {
-          applyDraft(obj.draft);
-        } else if (obj.type === 'done') {
-          vibeHistory.push({ role: 'user',      content: text });
-          vibeHistory.push({ role: 'assistant', content: displayText.trim() });
-        } else if (obj.type === 'error') {
-          throw new Error(obj.message);
-        }
+    // Fallback: if the backend failed to send a draft event, parse it from
+    // the accumulated full text so the right panel is always populated
+    if (!draftReceived) {
+      const m = fullText.match(/<draft>([\s\S]*?)<\/draft>/);
+      if (m) {
+        try { applyDraft(JSON.parse(m[1])); } catch { /* malformed JSON from LLM */ }
       }
     }
 

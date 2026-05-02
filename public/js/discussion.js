@@ -288,6 +288,9 @@ async function runTurn() {
     if (buffer.trim() && !streamError) handleStreamLine(buffer);
     if (streamError) throw streamError;
 
+    // User stopped the discussion — exit without error
+    if (!discussionState.running) return;
+
     if (!full.trim()) {
       if (reasoning.trim()) {
         throw new Error('LM Studio returned reasoning but no final answer. The model may need a larger token limit or a shorter thinking phase.');
