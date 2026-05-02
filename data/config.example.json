@@ -1,0 +1,8 @@
+{
+  "baseUrl": "http://localhost:1234/v1",
+  "apiKey": "lm-studio",
+  "model": "",
+  "contextWindowTokens": 8192,
+  "timeoutMs": 120000,
+  "logLevel": "info"
+}

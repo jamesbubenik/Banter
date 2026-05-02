@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Banter</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">⚡</span>
+      <span class="brand-name">Banter</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="agents">
+        <span class="nav-icon">🧑</span>
+        <span>People</span>
+      </button>
+      <button class="nav-item" data-view="discussion">
+        <span class="nav-icon">💬</span>
+        <span>Discussion</span>
+      </button>
+      <button class="nav-item" data-view="settings">
+        <span class="nav-icon">⚙️</span>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+  </aside>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- TOPBAR -->
+    <header id="topbar">
+      <h1 id="page-title">People</h1>
+    </header>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- AGENTS VIEW                                 -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="agents-view" class="view active">
+      <div class="view-toolbar">
+        <p class="view-subtitle">Create and manage the people in your discussions.</p>
+        <button class="btn btn-primary" id="new-agent-btn">+ New Person</button>
+      </div>
+
+      <div id="agents-grid" class="agents-grid">
+        <!-- populated by JS -->
+      </div>
+
+      <div id="agents-empty" class="empty-state" style="display:none">
+        <div class="empty-icon">🤖</div>
+        <h3>No people yet</h3>
+        <p>Create your first person to start a discussion.</p>
+        <button class="btn btn-primary" id="new-agent-empty-btn">+ New Person</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- DISCUSSION VIEW                             -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="discussion-view" class="view">
+
+      <!-- SETUP PANEL -->
+      <div id="discussion-setup">
+        <div class="setup-card">
+          <h2 class="setup-title">Configure Discussion</h2>
+
+          <div class="form-group">
+            <label class="form-label" for="debate-topic">Discussion Context</label>
+            <textarea
+              id="discussion-topic"
+              class="form-textarea"
+              placeholder="Describe the topic, scenario, task, or direction that should guide the conversation."
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="agents-row">
+            <div class="form-group agent-select-group">
+              <label class="form-label">Person 1</label>
+              <div id="agent1-selector" class="agent-selector" data-slot="1">
+                <div class="agent-selector-placeholder">Select a person</div>
+              </div>
+            </div>
+
+            <div class="vs-badge">with</div>
+
+            <div class="form-group agent-select-group">
+              <label class="form-label">Person 2</label>
+              <div id="agent2-selector" class="agent-selector" data-slot="2">
+                <div class="agent-selector-placeholder">Select a person</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="setup-error" class="setup-error" style="display:none"></div>
+
+          <button class="btn btn-primary btn-lg btn-start" id="start-debate-btn">
+            ▶ Start Discussion
+          </button>
+        </div>
+      </div>
+
+      <!-- ARENA PANEL -->
+      <div id="discussion-arena" style="display:none">
+        <div class="arena-header">
+          <div class="arena-topic-wrap">
+            <span class="arena-topic-label">Context</span>
+            <span id="arena-topic-text" class="arena-topic-text"></span>
+          </div>
+          <div class="arena-combatants">
+            <span id="arena-agent1-badge" class="combatant-badge agent1-badge"></span>
+            <span class="combatant-vs">with</span>
+            <span id="arena-agent2-badge" class="combatant-badge agent2-badge"></span>
+          </div>
+          <button class="btn btn-danger" id="stop-debate-btn">■ Stop Discussion</button>
+        </div>
+
+        <div class="discussion-feed-wrap">
+          <div id="discussion-feed" class="discussion-feed">
+            <!-- messages injected here -->
+          </div>
+          <button id="discussion-jump-btn" class="discussion-jump-btn" style="display:none">↓ Jump to Present</button>
+        </div>
+
+        <div id="discussion-status" class="discussion-status"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SETTINGS VIEW                               -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="settings-view" class="view">
+      <div class="settings-card">
+        <h2 class="settings-section-title">LM Studio Connection</h2>
+
+        <div class="form-group">
+          <label class="form-label" for="cfg-base-url">Base URL</label>
+          <input type="text" id="cfg-base-url" class="form-input" placeholder="http://localhost:1234/v1" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="cfg-api-key">API Key</label>
+          <input type="text" id="cfg-api-key" class="form-input" placeholder="lm-studio" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="cfg-default-model">Default Model</label>
+          <div class="input-with-btn">
+            <input type="text" id="cfg-default-model" class="form-input" placeholder="Select or type model name" />
+            <button class="btn btn-secondary" id="refresh-models-btn">↻ Change Model</button>
+          </div>
+          <div id="models-list" class="models-list" style="display:none"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="cfg-timeout">Request Timeout (ms)</label>
+          <input type="number" id="cfg-timeout" class="form-input" placeholder="120000" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="cfg-context-window">Context Window Tokens</label>
+          <input type="number" id="cfg-context-window" class="form-input" placeholder="8192" min="1024" step="512" />
+        </div>
+
+        <div class="settings-divider"></div>
+        <h2 class="settings-section-title">Server</h2>
+
+        <div class="form-group">
+          <label class="form-label" for="cfg-log-level">Log Level</label>
+          <select id="cfg-log-level" class="form-input form-select">
+            <option value="off">Off</option>
+            <option value="error">Error</option>
+            <option value="info">Info</option>
+            <option value="debug">Debug</option>
+          </select>
+        </div>
+
+        <div class="settings-actions">
+          <button class="btn btn-primary" id="save-config-btn">Save Settings</button>
+          <button class="btn btn-secondary" id="test-connection-btn">Test Connection</button>
+        </div>
+
+        <div id="settings-msg" class="settings-msg" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- VIBE CREATOR VIEW                            -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="vibe-creator-view" style="display:none">
+      <div class="vibe-creator-layout">
+
+        <!-- Left: Chat -->
+        <div class="vibe-chat-panel">
+          <div id="vibe-chat-messages" class="vibe-chat-messages"></div>
+          <button id="vibe-jump-btn" class="vibe-jump-btn" style="display:none">↓ Jump to Present</button>
+          <div class="vibe-chat-input-area">
+            <textarea
+              id="vibe-input"
+              class="vibe-input"
+              placeholder="Describe the person you want to create… (Enter to send, Shift+Enter for new line)"
+              rows="1"
+            ></textarea>
+            <button id="vibe-send-btn" class="btn btn-primary">Send</button>
+          </div>
+        </div>
+
+        <!-- Right: Preview -->
+        <div class="vibe-preview-panel">
+          <div class="vibe-preview-header">
+            <button id="vibe-back-btn" class="btn btn-secondary btn-sm">Cancel</button>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Name</label>
+            <input type="text" id="vibe-name" class="form-input" placeholder="e.g. The Skeptic" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <input type="text" id="vibe-description" class="form-input" placeholder="Brief description" />
+          </div>
+
+          <div class="form-group" style="flex:1;display:flex;flex-direction:column;">
+            <label class="form-label">System Prompt</label>
+            <textarea id="vibe-system-prompt" class="form-textarea vibe-system-prompt-field" placeholder="The person's personality and instructions…"></textarea>
+          </div>
+
+          <div id="vibe-error" class="setup-error" style="display:none"></div>
+
+          <button id="vibe-create-btn" class="btn btn-primary btn-lg vibe-create-btn">✨ Create Person</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /#main -->
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- AGENT MODAL                                         -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div id="agent-modal-overlay" class="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">New Person</h2>
+        <button class="modal-close" id="modal-close-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="agent-name">Name <span class="required">*</span></label>
+          <input type="text" id="agent-name" class="form-input" placeholder="e.g. The Optimist" maxlength="60" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="agent-description">Description</label>
+          <input type="text" id="agent-description" class="form-input" placeholder="Brief description of this agent's role" maxlength="120" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="agent-model">Model</label>
+          <div class="input-with-btn">
+            <input type="text" id="agent-model" class="form-input" placeholder="Leave blank to use default model" />
+            <button class="btn btn-secondary btn-sm" id="agent-refresh-models-btn">↻</button>
+          </div>
+          <div id="agent-models-list" class="models-list" style="display:none"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="agent-system-prompt">System Prompt <span class="required">*</span></label>
+          <textarea
+            id="agent-system-prompt"
+            class="form-textarea"
+            placeholder="Define this agent's personality, perspective, and conversation style. For example: 'You are a pragmatic scientist who relies on empirical evidence and peer-reviewed research. You explain uncertainty clearly and keep the discussion grounded in data.'"
+            rows="8"
+          ></textarea>
+        </div>
+
+        <div id="modal-error" class="modal-error" style="display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="modal-cancel-btn">Cancel</button>
+        <button class="btn btn-primary" id="modal-save-btn">Save Agent</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENT SELECTOR DROPDOWN -->
+  <div id="agent-dropdown" class="agent-dropdown" style="display:none">
+    <div id="agent-dropdown-list"></div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/agents.js"></script>
+  <script src="/js/discussion.js"></script>
+  <script src="/js/settings.js"></script>
+  <script src="/js/vibe-creator.js"></script>
+</body>
+</html>
